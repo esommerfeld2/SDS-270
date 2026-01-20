@@ -1,0 +1,263 @@
+---
+title: "Exercises from Class #10: The Dots"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+In this lab, we will learn how to pass the dots.
+
+**Goal:** by the end of this lab, you should be able to pass the dots appropriately.
+
+```{r}
+#| echo: false
+#| warning: false
+library(tidyverse)
+```
+
+
+## The dots
+The dots (`...`) are a way of collecting an arbitrary set of arguments to a function. There are two main purposes as to why you might want to have the dots as an arguments to your function.
+
+First, note that you can convert the dots into a named list within your function using the `list()` function.
+
+```{r}
+catch_the_dots <- function(...) {
+  list(...)
+}
+
+catch_the_dots(whatever = "hi")
+```
+
+### Passing the dots
+
+You might want to pass the dots to another function from within your function. This is typically useful when you want to leverage the functionality of an existing function, without having to specify all of its arguments. For example, suppose we want to add theming to a `ggplot`. One way to do that would be to extend the `scale_color_manual()` function and hard-code the official Smith colors.
+
+First, note that `scale_color_manual()` takes the dots as an argument.
+
+```{r}
+args(ggplot2::scale_color_manual)
+```
+
+Moreover, it passes the dots to `manual_scale()`:
+
+```{r}
+body(ggplot2::scale_color_manual)
+```
+
+Which in turn passes the dots to `discrete_scale()`:
+
+```{r}
+body(ggplot2:::manual_scale)
+```
+
+Which actually does the work (Note that having 3 colons `:::` allows you to access functions in an R package that aren’t `@export`ed, i.e. are kept hidden from the user in the function’s roxygen2 code).
+
+```{r}
+body(ggplot2::discrete_scale)
+```
+
+According to the [Smith College Visual Identity program](https://www.smith.edu/your-campus/offices-services/communications-marketing/brand-guidelines), the official Smith colors are: #002855, #F2A900.
+
+Thus, we can create a `scale_color_smith()` function that leverages `scale_color_manual()` by hard-coding the official Smith color values. But in order to get this to work, we have to pass the dots so that `scale_color_manual()` can do all the work that it normally does! Otherwise, we would have to copy the source of `scale_color_manual()` – but that would be inefficient and brittle.
+
+```{r}
+scale_color_smith <- function(...) {
+  ggplot2::scale_color_manual(
+    ..., 
+    values = c("#002855", "#F2A900")
+  )
+}
+
+```
+
+We can then use our custom function. Note that since it only has two colors, it won’t work if it is mapped to a categorical variable with more than two levels.
+
+```{r}
+starwars |>
+  filter(species %in% c("Human", "Droid")) |> 
+  ggplot(aes(x = height, y = mass, color = species)) + 
+  geom_point() + 
+  scale_color_smith()
+```
+
+::: {.callout-important}
+
+### Q1
+
+Write the corresponding function `scale_fill_smith()` and test it.
+
+:::
+
+```{r}
+# PUT SOLUTION HERE
+scale_fill_smith <- function(...) {
+  ggplot2::scale_fill_manual(
+    ..., 
+    values = c("#002855", "#F2A900")
+  )
+}
+starwars |>
+  filter(species %in% c("Human", "Droid")) |> 
+  group_by(species, gender) |>
+  summarise(
+    count = n()
+  ) |>
+  ggplot(aes(x = gender, y = count, fill = species)) + 
+  geom_col() + 
+  scale_fill_smith()
+```
+
+::: {.callout-important}
+
+### Q2
+
+(Challenge) Write a `scale_y_continuous_smith()` function that produces a gradient scale from Smith blue to Smith gold.
+
+:::
+
+```{r}
+# PUT SOLUTION HERE
+body(ggplot2::scale_color_gradient)
+scale_color_gradient_smith <- function(...) {
+  ggplot2::scale_color_gradient(
+    ..., 
+   low="#002855", 
+   high = "#F2A900"
+  )
+}
+ggplot(data= starwars, aes(x= height, y= mass, color=birth_year)) +
+  geom_point() +
+  scale_color_gradient_smith()
+```
+
+### The dots in generic functions
+
+The other main purpose of the dots is to avoid having to specify (or even know) all the arguments that S3 methods take. For example, the  `print()` function takes only the argument `x` (the thing to be printed) and the dots `...`
+
+```{r}
+args(print)
+```
+
+However, different `print()` methods take different arguments.
+
+```{r}
+args(print.data.frame)
+```
+
+
+```{r}
+args(print.factor)
+```
+
+Note that the `factor` method passes the dots to `print()` itself. In this case, what is being run is `print.default()`, which passes them to an internal function.
+
+```{r}
+body(print.factor)
+```
+
+```{r}
+args(print.default)
+```
+
+```{r}
+body(print.default)
+```
+
+We will define our own `print()` method, and then run it on a `factor`. First, let’s make a `factor`.
+
+```{r}
+x <- factor(starwars$name)
+x
+```
+
+Note that `max.levels` is one of the arguments to `print.factor()`, and so we can use that option. Can you spot the difference in the output? If not, read the documentation for `print.factor()` and see what the `max.levels` argument does.
+
+```{r}
+args(print.factor)
+```
+
+```{r}
+print(x)
+print(x, max.levels = 3)
+```
+
+However, since `print.factor()` eventually passes the dots to `print.default()`, and `print.default()` accepts right as one of its arguments, we can use the right argument with the `print()` generic! Note how the text is right-justified now!
+
+```{r}
+print(x, right = TRUE)
+```
+
+::: {.callout-important}
+
+### Q3
+
+Experiment by passing some other arguments accepted by `print.default()` through the dots. Do they work?
+
+:::
+
+```{r}
+# PUT SOLUTION HERE
+print(x)
+print(x, max= 10)
+print(x, width= 1)
+#they are changing the 87 Levels: text at the bottom
+```
+
+Next, we will define a new `print()` method for objects of class `my_factor`. This method displays the names of the dots, gives an affirmation of your programming, and then calls `NextMethod()`. Thus, the behavior is the same as `print.factor()`, but with a little extra information.
+
+```{r}
+print.my_factor <- function(x, ...) {
+  dots <- list(...)
+  
+  if (length(dots) > 0) {
+    message(paste("\nThe dots are:", names(dots)))
+  }
+  
+  affirmations <- c(
+    "You are a really great programmer!",
+    "You are so good at this!",
+    "You're learning so much!",
+    "Keep trying and you will get there!"
+  )
+  
+  if ("affirmation" %in% names(dots)) {
+    message(sample(affirmations, 1))
+  }
+  
+  NextMethod()
+}
+
+class(x) <- c("my_factor", class(x))
+print(x, max.levels = 3, right = TRUE, affirmation = TRUE)
+```
+
+::: {.callout-important}
+
+### Q4
+
+Write your own method for `print()` that works on data.frames.
+
+:::
+
+```{r}
+# PUT SOLUTION HERE
+print.ella_method <- function(x, ...){
+  dots <- list(...)
+  if (length(dots) > 0) {
+    message(paste("\nThe dots are:", names(dots)))
+  }
+  if ("ilovedata" %in% names(dots)) {
+    message(paste("I love data to <3"))
+  }
+  if ("grammar" %in% names(dots)) {
+    message(paste("*too"))
+  }
+  
+  NextMethod()
+}
+
+class(mtcars) <- c("ella_method", class(mtcars))
+print(mtcars, yay= TRUE, ilovedata= TRUE, grammar= TRUE)
+```

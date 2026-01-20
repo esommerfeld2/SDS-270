@@ -1,0 +1,146 @@
+---
+title: 'Quiz #2: Classes and Control Flow (60 pts)'
+author: "Ella Sommerfeld"
+date: "2025-10-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Instructions
+
+- This is an open-note coding quiz. However, you are not allowed to use any generative AI, Google, or any forums. Doing so will result in a zero.
+- Read and follow all directions; points will be deducted if not all work is shown.
+- When finished, submit a knitted .html file and the .Rmd file to Moodle under "Quiz #2".
+- You have 25 minutes to finish the quiz.
+
+### Q1: Classes (30 pts)
+
+Suppose Kaelee wanted to print out the following information with the `head()` of the data frame:
+
+- The mean of the first double vector when traversing left to right.
+
+She wants this information to be printed out with the original information in the `head()` call of a data frame as part of a new class called `meanDF`. With this in mind, answer the following questions:
+
+(a) (5 pts) Make the `mtcars` dataset have its child class as `meanDF`.
+
+```{r}
+# PUT SOLUTION HERE
+attr(mtcars, "class") <- c("meanDF", "data.frame")
+#from the class six slides, 12-13
+```
+
+(b) (10 pts) Write code that extracts the mean from the first double vector seen in the `mtcars` data frame from left to right. Name this result `theMean`.
+
+Hint: Consider what elements of control flow are needed here and what items need to be tracked as you traverse from left to right.
+
+```{r}
+# PUT SOLUTION HERE
+library(tidyverse)
+means <- map_if(mtcars, is.double, mean)
+theMean <-means[1]
+#Found using ?map and then reading the map documentation to find map_if and figuring out how to use it!
+```
+
+(c) (10 pts) Using `theMean`, create a `head()` method for the `meanDF` class that prints a message of the aformentioned mean with some text, along with the standard output from `head()` from a data frame class.
+
+```{r}
+theMean <- 10
+# Do not edit code above.
+# PUT SOLUTION HERE
+head.meanDF <- function(df,...) {
+  cat(
+  "This the mean of the first double vector", theMean
+  )
+ NextMethod()
+}
+#Used in class help/lab 5
+```
+
+(d) (5 pts) Run the method created in part (c) on `mtcars`.
+
+```{r}
+theMean <- 10
+# Do not edit code above.
+# PUT SOLUTION HERE
+head(mtcars)
+#Used in class help/lab 5
+```
+
+### Q2: Control Flow (30 pts)
+
+Suppose Darren has five school classes and he is curious about the following for each class:
+
+- Does he have a homework assignment?
+- What grade does he have?
+- Is there extra credit?
+
+You will be using the `sample()` function, which contains the following arguments for your problem:
+
+- `x`: Possible outcomes, placed in a vector
+- `size`: Number of times picked (e.g. number of dice rolls), as a single double value
+- `prob`: Probability of each component of `x` occurring, in a double vector summing up to 1 
+- `replace`: `TRUE` if we want picked outcome to be seen again; `FALSE` if completely removed
+
+For example, if I wanted to flip a coin five times, I would have the following:
+
+```{r}
+sample(x = c("H", "T"), size = 5, prob = c(0.5, 0.5), replace = T)
+```
+
+Answer the following questions below:
+
+(a) (8 pts) Assuming equal chances in any given class, create a `sample` function with `size = 1` for each curiosity, with the following specifications:
+
+- 35\% of a HW assignment
+- 40\%, 30\%, 20\%, 5\%, 5\% of having an A, B, C, D, and F respectively
+- 10\% of there being extra credit
+
+```{r}
+# PUT SOLUTION HERE
+sample(x = c("Homework", "No Homework"), size = 1, prob = c(0.35, 0.65), replace = T)
+sample(x = c("A", "B", "C", "D", "F"), size = 1, prob = c(0.40, 0.30, 0.20, 0.05, 0.05), replace = T)
+sample(x = c("Extra Credit", "No Extra Credit"), size = 1, prob = c(0.10, 0.90), replace = T)
+```
+
+(b) (8 pts) Create a for-loop that runs the code from part (a) and stores the results in three different vectors. 
+
+```{r, error= TRUE}
+timeStartFor <- Sys.time()
+# Do not edit code above.
+v1<- c()
+v2 <- c()
+v3<- c()
+for(i in 1:5){
+  v1[i] <- sample(x = c("Homework", "No Homework"), size = 1, prob = c(0.35, 0.65), replace = T)
+  v2[i] <- sample(x = c("A", "B", "C", "D", "F"), size = 1, prob = c(0.40, 0.30, 0.20, 0.05, 0.05), replace = T)
+  v3[i] <- sample(x = c("Extra Credit", "No Extra Credit"), size = 1, prob = c(0.10, 0.90), replace = T)
+}
+
+# Do not edit code below.
+timeFor <- Sys.time() - timeStartFor
+```
+
+(c) (8 pts) Knowing that `sample()` is a vectorized function, how can we forgo the for-loop and just use the `sample()` functions to complete the tasks seen in part (b)? Write the code below:
+
+```{r}
+timeStartVect <- Sys.time()
+# Do not edit code above.
+  vc1 <- sample(x = c("Homework", "No Homework"), size = 5, prob = c(0.35, 0.65), replace = T)
+  vc2 <- sample(x = c("A", "B", "C", "D", "F"), size = 5, prob = c(0.40, 0.30, 0.20, 0.05, 0.05), replace = T)
+  vc3 <- sample(x = c("Extra Credit", "No Extra Credit"), size = 5, prob = c(0.10, 0.90), replace = T)
+# Do not edit code below.
+timeVect <- Sys.time() - timeStartVect
+```
+
+(d) (6 pts) Print out `timeFor` and `timeVect`, which are the times it took to run through your code in parts (b) and (c) respectively. Discuss your observations and explain why these results occur?
+
+```{r}
+# PUT SOLUTION HERE
+timeFor
+timeVect
+```
+
+The for loop takes longer to run because it has to call sample each time and add the element and then come back and call sample again five times. The vectorized one is faster because it is only calling sample once per vector.

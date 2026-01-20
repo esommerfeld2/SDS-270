@@ -1,0 +1,19 @@
+Package: mypackage3
+Type: Package
+Title: Ella's Package
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Ella", "Sommerfeld",
+      email = "esommerfeld@smith.edu",
+      role = c("aut", "cre")
+    )
+  )
+Description: This is a pacakge that better work.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports: 
+    crayon,
+    emoji

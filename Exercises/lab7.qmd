@@ -1,0 +1,122 @@
+---
+title: "Exercises from Class #7: Packages"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+
+In this lab, we will learn how to build an R package.
+
+-   **Goal:** by the end of this lab, you should be able to build an R package.
+
+## Building a package
+
+An R package must have certain files in certain places in order to be valid. Additionally, RStudio has to know that the RStudio Project that you are working on is an R package.
+
+Keep in mind that we generally have the following seven items in our package:
+
+-   DESCRIPTION: summary of work
+-   NAMESPACE: self-containment
+-   R/: all code
+-   tests/: tests for code
+-   man/: manual for code
+-   vignettes/: articles
+-   data/: any data needed
+
+Some of these will be shown initially, others will not. As you do build the package over time, you will incorporate these seven items.
+
+We're going to build and install the package. To do so, you will do the following:
+
+1.  Create a new folder on your computer.
+2.  Go to File $\rightarrow$ New Project.
+3.  Go to New Directory $\rightarrow$ New Project.
+
+You should see this screen pop up: ![](images/newproject.png)
+
+4.  For directory name, type in `mypackage`.
+5.  For the subdirectory, use the folder you created in step 1.
+6.  Click "Create Project".
+
+You should see the new project load in your RStudio window. If you notice in the Files tab, you will see the following: ![](images/projectlist.png) Next, go to "Tools -\> Project Options… -\> Build Tools" and make sure that:
+
+-   Generate documentation with Roxygen is checked
+-   When you click on "Configure…", "Automatically roxygenize when running: Install and Restart" is checked!
+
+::: callout-note
+It is entirely possible that the NAMESPACE will not update on its own. If so, you might have to do the following:
+
+-   Delete the NAMESPACE file in your package.
+-   When using `devtools::document()` in the future, a `NAMESPACE` file should automatically be created.
+:::
+
+::: callout-important
+##### Q1
+
+Use the "Install" button under the "Build" tab to build the package.
+:::
+
+You should now see a package named `mypackage` in your Packages tab. If you don't, something went wrong. Ask for help!
+
+Every R package needs a `DESCRIPTION` file. This file contains the basic information about the package that allows it to be compiled as a package.
+
+::: callout-important
+##### Q2
+
+Experiment by changing some of the information about the package in the `DESCRIPTION` file, and then rebuilding the package. Do you see the changes reflected in the Package documentation? Try changing the title, description, or version number. \[Do NOT change the name of the package!\]
+:::
+
+## Contributing to the package
+
+::: callout-important
+##### Q3
+
+Edit the `DESCRIPTION` and add your name.
+:::
+
+::: callout-important
+##### Q4
+
+Add the `print_emoji()` method you wrote for the S3 lab to a new file named `print_emoji.R` in the `R/` directory. Rebuild the package.
+:::
+
+Try to use your function by running (something like):
+
+```{r}
+class(mtcars) <- c("sds270", class(mtcars))
+mtcars
+```
+
+Does it work?
+No.
+
+::: callout-important
+##### Q5
+
+Add the following directive to your method at the beginning of the file.
+
+```{r}
+#' @export
+```
+
+Run `devtools::document()` in your console. Then, rebuild the package. Check the `NAMESPACE` file. Does it work now?
+
+Hint: Use the reading here for help: [link](https://r-pkgs.org/whole-game.html#sec-whole-game-document)
+:::
+
+::: callout-important
+##### Q6
+
+If your method calls function from another package, add those dependencies to the Imports field in `DESCRIPTION` using `use_package()`. Rebuild the package.
+:::
+
+::: callout-important
+##### Q7
+
+Run an `R CMD check` by clicking on the "Check" button under the "Build" tab. Continue until you have fixed all errors, warnings, and notes.
+:::
+
+## Engagement
+
+Prompt: Paste the errors, warnings, or messages that you get from `R CMD check` to the `#questions` channel. What questions do you have about what those mean?

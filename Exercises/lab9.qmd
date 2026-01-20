@@ -1,0 +1,249 @@
+---
+title: "Exercises from Class #9: Functions"
+subtitle: "SDS 270"
+author: "PUT NAME HERE"
+format: html
+---
+
+## Introduction
+
+In this lab, we will learn how to find out about functions and the principles of lexical scoping.
+
+**Goal:** By the end of this lab, you should be able to retrieve information about functions and understand how lexical scoping works in R.
+
+```{r}
+#| echo: false
+#| warning: false
+library(tidyverse)
+```
+
+## Learning about functions
+There are many functions in R, and nobody knows how all of them work. From time to time it is helpful to retrieve information about these functions. The documentation in   `help()` is great to read, but it doesn’t always provide the information you need.
+
+### Arguments
+
+The first question you may have is what arguments a function takes. We can learn this by running `args()` on the bare name of the function.
+
+```{r}
+args(dplyr::filter)
+```
+
+```{r}
+args(print)
+```
+
+Note that for S3 generic function like `print()`, you can also find the arguments for specific methods.
+
+```{r}
+args(print.data.frame)
+```
+
+## Exercises
+
+::: {.callout-important}
+
+### Q1
+
+Find the arguments for `tidyr::pivot_longer()`.
+
+```{r}
+# PUT SOLUTION HERE
+args(tidyr::pivot_longer)
+```
+
+:::
+
+::: {.callout-important}
+
+### Q2
+
+Think of another function whose arguments you always forget. Find them using `args()`.
+
+```{r}
+# PUT SOLUTION HERE
+args(case_when)
+```
+
+:::
+
+### The body
+The `body()` function returns the actual code that runs inside a function. There are a several reasons why you might want to see this:
+
+- It’s the only way to actually see what a function is doing
+- Reading other people’s code is a great way to improve your own ability to write code
+- If the documentation doesn’t answer your question, perhaps the code will
+- Inspecting the code inside a function will help you to think more like a developer, as opposed to a user.
+
+```{r}
+body(tibble)
+```
+
+Note that a function may call unexported functions (e.g., `tibble_quos()`) that you won’t recognize. Since the function is not exported, you have to use the triple colon operator to view its source.
+
+```{r}
+body(tibble:::tibble_quos)
+```
+
+If you try to view the body of an S3 generic function, you will find that it is rather short.
+
+```{r}
+body(print)
+```
+
+A generic function usually doesn’t do anything other than call one of its methods. Those methods have the interesting code.
+
+```{r}
+body(print.data.frame)
+```
+
+```{r}
+body(print.default)
+```
+
+::: {.callout-important}
+
+### Q3
+
+Inspect the code for the `summary` method for an `lm` object. Do you see where the $R^2$ is computed?
+
+```{r}
+# PUT SOLUTION HERE
+body(summary.lm)
+```
+Yes I beileve it is during the line rss <- sum(w * r^2).
+
+:::
+
+### The environment
+It is also important to know in what environment a function is created. The `environment()` function tells us.
+
+```{r}
+environment(print)
+```
+
+```{r}
+environment(filter)
+```
+
+We’ll learn more about environments in the next chapter.
+
+## Scoping
+
+R uses lexical scoping. This means that when R looks for the value of names, it depends on the state of things when the function is defined.
+
+### Name masking
+R looks for variables inside a function definition first (local variables), but if it can’t find them, it looks in the parent environment. In this case, when `my_fun()` is executed, R looks for the value of `global_var`. Many programming languages will throw an error in this situation, because `global_var` is not defined in the environment created by `my_fun()`. However, R just keeps looking for `global_var` in the parent environment (which in this case is the global environment).
+
+```{r}
+global_var <- 21
+
+my_fun <- function(x) {
+  x + global_var
+}
+
+my_fun(3)
+```
+
+```{r}
+environment(my_fun)
+```
+
+Note also that if we try to re-define `global_var` inside the function definition, we are masking the name `global_var`.
+
+```{r}
+my_fun2 <- function(x) {
+  global_var <- 99
+  x + global_var
+}
+
+my_fun2(3)
+```
+
+Note the difference reported by `findGlobals()`.
+
+```{r}
+codetools::findGlobals(my_fun)
+```
+
+```{r}
+codetools::findGlobals(my_fun2)
+```
+
+::: {.callout-important}
+
+### Q4
+
+Write a function analogous to `my_fun()` in Python or Java. Does it work?
+
+```{python}
+global_var = 2
+def my_fun3(x):
+  return x + global_var
+my_fun3(3)
+```
+
+Yes it works in the code that I wrote. It returns 5 just like in R.
+
+:::
+
+### A fresh start
+
+Local variables that are created inside a function never see the light of day in the parent environment.
+
+```{r}
+my_fun3 <- function(x) {
+  local_var <- 7
+  x + global_var
+}
+
+my_fun3(3)
+```
+
+```{r}
+#| error: true
+local_var
+```
+
+::: {.callout-important}
+
+### Q5
+
+Why would it be a bad idea to allow the value of local variables to persist outside of the function?
+
+If we are in the process of changing something we don't yet want those changes to be reflected in the outside environment. Also sometimes we are creating a lot of variables just for that function and it can waste space in memory if we don't need to store it beyond the function. 
+
+:::
+
+### Dynamic lookup
+
+Because of name masking, values of objects in the parent environment can affect the behavior of a function. This behavior is often useful in data analysis scripts, but can be problematic in more formal programming.
+
+This means that if we reset the value of `global_var`, we change the behavior of `my_fun()`.
+
+```{r}
+global_var <- 15
+
+my_fun(3)
+```
+
+::: {.callout-important}
+
+### Q6
+
+Give an example of a situation in which dynamic lookup is helpful.
+
+If we had a dataset we wanted to run a function on and then later wanted to change that dataset and run the same function it would be nice if the dataset could update and then the function would output the new information with the updated dataset.
+
+:::
+
+::: {.callout-important}
+
+### Q7
+
+Give an example of a situation in which dynamic lookup could be problematic.
+
+If we want to keep a variable static and then at some point accidently changed it the dynamic lookup would refelct that change which would be problematic because it would still run and everything would look right expect for the change in output. 
+
+:::
+
+A function that depends only on its inputs is called pure.

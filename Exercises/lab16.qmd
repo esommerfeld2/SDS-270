@@ -1,0 +1,194 @@
+---
+title: "Exercises from Class #16: map()"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+
+In this lab, we will learn how to use variants of `map()` to iterate tasks.
+
+**Goal:** By the end of this lab, you should be able to use variants of `map()` to do complex operations with a few lines of code.
+
+```{r}
+library(tidyverse)
+```
+
+
+## One input: `map()`
+
+In this lab, we are going to be generating a bunch of random data.
+
+First, we’re going to create a vector that holds `n`, which represents how much random data we are going to generate in each simulation. We’re going to store this as a tibble with one column (for now).
+
+```{r}
+random_dist <- tibble(
+  n = 1:20 * 100
+)
+```
+
+Next, we use the `map()` function to generate a list of random vectors, each drawn from a normal distribution with a different number of samples drawn in each case.
+
+```{r}
+random_data <- map(random_dist$n, rnorm)
+str(random_data)
+```
+
+To keep things organized, let’s save the list of random data to our original tibble. Note that data is now a list-column.
+
+```{r}
+random_dist$data <- random_data
+random_dist
+```
+
+This is compact way (20 rows and 2 columns) to store what are really 21,000 random numbers! You can see the long version by `unnest()`-ing.
+
+```{r}
+random_dist %>%
+  unnest(cols = data) %>%
+  nrow()
+```
+
+Next, we can perform some rudimentary analysis on each randomly generated data set. Here, we compute the means and standard deviations of each simulated data set.
+
+```{r}
+random_dist <- random_dist %>%
+  mutate(
+    means = map_dbl(data, mean), 
+    sds = map_dbl(data, sd)
+  )
+```
+
+::: {.callout-important}
+
+### Q1
+
+Use the `median()` function to compute the median of each data set. Add them to the random_dist data frame.
+
+```{r}
+# PLACE SOLUTION HERE
+random_dist <- random_dist %>%
+  mutate(
+    medians = map_dbl(data, median), 
+  )
+```
+
+:::
+
+::: {.callout-important}
+
+### Q2
+
+Make a scatterplot of the standard deviations as a function of the size of the simulation. Do you notice a pattern?
+
+```{r}
+# PLACE SOLUTION HERE
+ggplot(data= random_dist, aes(x= n, y = sds)) +
+  geom_point()
+```
+
+No there is no pattern. Maybe a slight fan shape, more range in sds in lower n's but it isn't storng. 
+
+:::
+
+## One input, not first argument
+
+In the previous examples, the vector that we were iterating over was the first argument to the function that we wanted to apply. This is typical, but not the only situation we may find ourselves in.
+
+Here, we want to experiment with different trimmed means. That is, we want to compute the mean of **a single** simulated data set after throwing away either 10% or 25% of the data.
+
+In this case, we want to iterate over the `trim` argument to `mean()` instead of the `x` argument. To do this, we make use of the `.x` syntax made possible by the `~`.
+
+```{r}
+map_dbl(
+  c(0.1, 0.25), 
+  ~mean(x = random_dist$data[[1]], trim = .x)
+)
+```
+
+::: {.callout-important}
+
+### Q3
+
+Suppose we wanted to apply both values for the trimmed mean to all of the data sets. Why is `map_dbl()` insufficient for this task? What kind of function would we need?
+
+We want to vary both the trim and the data so we have two areas where we want to iterate over. map_dbl only allows us one place to iterate over. You could use two calls of map. One to cycle through the data, another to cycle through the different trims. 
+
+:::
+
+Now we’re going to write each one of our data sets to a separate CSV file. We’ll name each file using the sample size, so that we can tell them apart later. The `path()` function from the `fs` package will specify the full path. The `tempdir()` function returns the path to the temp directory on your computer.
+
+```{r}
+random_dist <- random_dist %>%
+  mutate(
+    filename = paste0("random_data_", n, ".csv"),
+    file = fs::path(tempdir(), filename)
+)
+```
+
+Note that each entry in the data list-column is a double vector. In order to write a CSV, we need this to be a `data.frame`. The `enframe()` function converts a vector into a tibble. We can use `map()` to do this to each data set.
+
+```{r}
+random_dist <- random_dist %>%
+  mutate(data_frame = map(data, enframe))
+```
+
+## Multiple inputs
+
+Finally, we’re ready to write the files. Note that we need to know both the path to the CSV file that we want to create, and the data set itself. The `pwalk()` function will step through our data frame row-by-row. To make things easier, we’ll rename the data column `x`, so it matches the argument name `write_csv()` is expecting.
+
+```{r}
+args(write_csv)
+```
+
+```{r}
+random_dist %>%
+  select(x = data_frame, file) %>%
+  pwalk(write_csv)
+```
+
+::: {.callout-important}
+
+### Q4
+
+Rewrite the previous `pwalk()` statement without the renaming (i.e., `select()`) step. To do this you will need to use the `~` formulation.
+
+```{r, error = TRUE}
+# PLACE SOLUTION HERE
+random_dist |>
+  pwalk(~write_csv(..8, ..7))
+```
+
+:::
+
+To confirm that this worked, use `fs::dir_ls()` to retrieve the list of CSVs in your temp directory.
+
+```{r}
+csv <- fs::dir_ls(tempdir(), regexp = "\\.csv")
+csv
+```
+
+## Reversing the process
+
+Another useful application of `map()` is to read in a bunch of files. Here, we use the list of CSV paths and `read_csv()` to build a large data set of all of the simulated data. Note that the `.id` argument to `map_dfr()` ensures that the `filename` is included as a column in the resulting data frame. Otherwise, we wouldn’t know which data set came from which file!
+
+```{r, message = FALSE}
+all_data <- csv %>%
+  map_dfr(read_csv, .id = "filename")
+
+all_data
+```
+
+An application of `nest()` brings the data back into a compact form.
+
+```{r, message = FALSE}
+nested_data <- all_data %>%
+  nest(data = c(name, value))
+
+nested_data
+```
+
+## Turn-in
+
+On Moodle, turn in this .qmd file.

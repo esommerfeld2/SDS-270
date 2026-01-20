@@ -1,0 +1,183 @@
+---
+title: "Exercises from Class #13: Environments"
+subtitle: "SDS 270"
+author: "PUT NAME HERE"
+format: html
+---
+
+## Introduction
+
+In this lab, we will learn how to get information about environments and the search path.
+
+**Goal:** by the end of this lab, you should be able to understand how loading packages affects the search path.
+
+## The search path
+
+Understanding the search path is crucial to understanding how R looks for the values that are bound to names. When you start a new R session, the search path contains only those packages that are loaded by default.
+
+```{r}
+search()
+```
+
+Note that if we use a function from another package using the :: operator, the package is loaded, but it is not added to the search path (i.e., attached).
+
+```{r}
+rlang::search_envs()
+```
+
+::: {.callout-important}
+
+### Q1
+
+How can you tell from the previous result that the `rlang` package is not part of the search path?
+
+There is no new line with $ <env: package:rlang>. So it is not a part of the search path as it is not listed. 
+
+:::
+
+To add a package to the search path, use the `library()` command.
+
+```{r}
+library(rlang)
+search()
+```
+
+The `tidyverse` is a kind of meta-package that loads several other packages. Note the order in which the new packages are loaded.
+
+```{r}
+library(tidyverse)
+search()
+```
+
+::: {.callout-important}
+
+### Q2
+
+How many different packages did the `tidyverse` add to the search path? Why do you think the developers chose the order they did?
+
+Tidyverse added 10 packages to the search path. The developers probably chose the order based on the hierarchy they needed. As each environment is a parent of another environment they probably wanted certain environments to be parents of each other. 
+
+:::
+
+## Your environment
+
+You can find out what environment you are in with `current_env()`.
+
+```{r}
+current_env()
+```
+
+To see what is in an environment, use `env_print()`.
+
+```{r}
+env_print()
+```
+
+Note that while the current environment is usually the global environment, that is is not always the case.
+
+```{r}
+global_env()
+```
+
+Let’s write a function that returns the environment that runs during its execution. Note that this is **not** the global environment.
+
+```{r}
+func_env <- function() {
+  x <- "what?"
+  current_env()
+}
+
+env_print(func_env())
+```
+
+::: {.callout-important}
+
+### Q3
+
+What is the parent environment of the execution environment shown above?
+
+```{r}
+func_env() |> env_parent()
+```
+
+The global environment. 
+
+:::
+
+## Name masking
+
+Let’s now change the global environment by writing a function called `filter()`. This function will just pass its argument to `dplyr::filter()` after printing a message to the screen.
+
+```{r}
+filter <- function(.data, ...) {
+  message(
+    paste(
+      "Filtering a", 
+      first(class(.data)), 
+      "object with", 
+      nrow(.data), 
+      "rows..."
+    )
+  )
+  dplyr::filter(.data, ...)
+}
+```
+
+::: {.callout-important}
+
+### Q4
+
+Use the new `filter()` function to find all the human characters in starwars. Does it work? Why or why not?
+
+```{r}
+human_starwars <- starwars |> filter(species == "Human")
+```
+
+It works! It prints the message and still filters. This is because our new filter function still uses the old filter function it is just adding a message. 
+
+:::
+
+::: {.callout-important}
+
+### Q5
+
+How is this similar or different than what we did with `print()` in the S3 lab?
+
+This is different from what we did with print because instead of creating a new class of objects and creating a function for that class we are directly overriding the method. Now anytime we use filter it will print the message as with print it was only when the object had the new class that we had created. 
+
+:::
+
+Note that our new function `filter()` is now in the global environment, which is first in the search path.
+
+```{r}
+env_has(global_env(), "filter")
+```
+
+But there are other environments that contain objects called `filter`. We can use `map()` to search through the chain of environments.
+
+```{r}
+search_envs() %>%
+  map_lgl(env_has, "filter")
+```
+
+We can also use `find()` to show us directly which environments contain an object that is bound to the name `filter`.
+
+```{r}
+find("filter")
+```
+
+::: {.callout-important}
+
+### Q6
+
+How can we use the `filter()` function from the stats package?
+
+```{r}
+stats::filter()
+```
+
+:::
+
+## Turn-in
+
+On Moodle, turn in this .qmd file.

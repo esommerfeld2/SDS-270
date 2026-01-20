@@ -1,0 +1,112 @@
+---
+title: "Exercises from Class #6: S3 and Packages"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+
+In these exercises, we will investigate the use of S3 and how a package operates. By the end of this, you should be able to:
+
+- Write basic code to utilize an S3 object, including a method, constructor, and helper.
+- Identify key parts to an R package.
+
+## Exercises: Set I
+
+By yourself or in a pair, think of a class you would like to create. Then, do the following:
+
+::: {.callout-important}
+
+##### Q1
+
+- Construct an instance of a class, making sure you have the object and at least one attribute.
+
+```{r}
+# PUT ANSWER HERE
+myDog <- list(type = "Golden Retriever", yearBorn = 2020, size= "medium", bark = FALSE)
+class(myDog) <- c("dog")
+attributes(myDog)
+```
+
+:::
+
+::: {.callout-important}
+
+##### Q2
+
+- Create a specific method for the class you created.
+
+```{r}
+# PUT ANSWER HERE
+# Generic function creation
+dogBark <- function(object) {
+  UseMethod("dogBark")
+}
+
+# Specific function for car class
+dogBark.dog <- function(object){
+  if(object$bark){
+    paste("Bark")
+  }else{
+    paste("You dog does not bark.")
+  }
+}
+
+# Use printModel on myCar
+dogBark(myDog)
+```
+
+:::
+
+
+::: {.callout-important}
+
+##### Q3
+
+- Create a constructor for the class you created.
+
+```{r}
+# PUT ANSWER HERE
+new_dog <- function(type, yearBorn, size, bark) {
+  stopifnot(is.character(type))
+  stopifnot(is.double(yearBorn))
+  stopifnot(is.character(size))
+  stopifnot(is.logical(bark))
+  structure(list(type = type, yearBorn = yearBorn, size = size, bark = bark), class = "dog")
+}
+
+lumi <- new_dog("Bernese", 2019, "medium", TRUE)
+```
+
+:::
+
+## Exercises: Set II
+
+In your same pairings (or by yourself), look through the following archive of R packages: [link](https://cran.r-project.org/web/packages/available_packages_by_name.html)
+
+::: {.callout-important}
+
+##### Q4
+
+Click on a package that is of interest to you and download the tar.gz file onto your computer. For each of the seven components discussed earlier, write down a few sentences describing what you see and how this would be useful to someone working with this package.
+
+add2ggplot
+DESCRIPTION: adds themes/colors to ggplot. In this section it talks through the authors and how to contact them as well as how to report bugs. It also links a github for more information. This would be helpful if you encountered a problem.
+NAMESPACE: a lot of the exports are colors like red_one and red_two while the imports are varations of ggplot (ie ggplot2, element, blank; ggplot2, element, line; etc). This is helpful for knowing what depends on this package running.
+R/: There are multiple coding documents here with clear names. So if I wanted to learn more about how adding a logo worked I could click on add_logo. This would be important if you got an error and wanted to see if you could find it yourself.
+tests/: This would help you understand what the source code is supposed to do, and if you make changes if they work. It does not look like this package has this at least as far as I found.
+man/: this gives instructions and lays out how you would run a certain aspect. Gives you a starting place to look and a better understanding of how something is supposed to run.
+vignettes/: This is sample code that runs and shows off what the package does. This is helpful for the implementation side of things. It gives you an idea of how you can use the package.
+data/: there is is no data folder as far as I can tell but this is where the data would be stored if you needed it. If you wanted to understand inputs and what their data looked like this is where you could go.
+
+:::
+
+## Turning in
+
+#### Turn in
+
+Save this .qmd file and turn in on Moodle under "Exercises for Class #6".
+
+
+

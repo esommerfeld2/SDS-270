@@ -1,0 +1,279 @@
+---
+title: "Exercises from Class #8: Control Flow"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+
+In this lab, we will learn how to use `ifelse()` for vectorized control flow, and to avoid writing for loops.
+
+- **Goal:** by the end of this lab, you will be able to assign values conditionally and re-write a for loop using `map()`.
+
+```{r}
+#| echo: false
+#| warning: false
+library(tidyverse)
+```
+
+## Exercise from Lecture
+
+::: {.callout-important}
+
+### Q1
+
+Recall that 3 outs to a half-inning ends the half-inning. Suppose `out <- sample(c(0, 1), size = 1, prob = c(0.4, 0.6))`. Write a while-loop that continues the `out` operation until 3 outs are recorded. 
+
+```{r}
+# PUT SOLUTION HERE
+count_out <- 0
+while(count_out < 3){
+  out <- sample(c(0, 1), size = 1, prob = c(0.4, 0.6))
+  count_out <- count_out + out
+}
+```
+
+:::
+
+## `ifelse()`
+The `if () ... else` syntax is for control flow. However, `ifelse()` is a function that returns a vector of the same length as the vector you put in, based on some logical conditions. These are often useful inside `mutate()`.
+
+::: {.callout-note}
+
+### Note
+Note that there is also a function called `if_else()` that does the same thing, but is more strict about data types. You can use either function.
+
+:::
+
+In the `starwars` data set, most characters have a species. However, there are many different species.
+
+```{r}
+starwars |>
+  group_by(species) |>
+  count() |>
+  arrange(desc(n))
+```
+
+Suppose that we wanted to lump all of the non-human and non-droid species together. We can use `ifelse()` to create a new variable.
+
+```{r}
+sw2 <- starwars |>
+  mutate(
+    species_update = ifelse(
+      !species %in% c("Human", "Droid"), 
+      "Other", 
+      species
+    )
+  ) |>
+  select(name, species, species_update)
+```
+
+Note the behavior around `NA`. Some characters have unknown species.
+
+```{r}
+starwars |>
+  filter(is.na(species))
+```
+
+Our previous construction led to everyone non-human or non-droid being classified as `Other`, when maybe some should be left as `NA`.
+
+```{r}
+sw2 |>
+  group_by(species_update) |>
+  count() |>
+  arrange(desc(n))
+```
+
+By capturing `NA`s in our condition, we can leave them as `NA`s.
+
+```{r}
+starwars |>
+  mutate(
+    species_update = ifelse(
+      !species %in% c("Human", "Droid", NA),
+      "Other", species
+    )
+  ) |>
+  filter(is.na(species)) |>
+  select(name, species, species_update)
+```
+
+
+::: {.callout-important}
+
+### Q2
+
+Create a new variable called `is_bald` and set it to `FALSE` if the character has hair of any color, `TRUE` if the character has no hair, and `NA` if the character is a droid.
+
+```{r}
+# PUT SOLUTION HERE
+starwars <- starwars |>
+  mutate(is_bald =
+    case_when(
+      hair_color != NA | hair_color != "none" ~ FALSE,
+      species == "Droid" ~ NA,
+      hair_color == "none" ~ TRUE,
+    )
+    )
+```
+
+:::
+
+::: {.callout-important}
+
+### Q3
+
+Use the following code to check your previous answer. Pay careful attention to NAs. Do you have them in all the right places?
+
+```{r}
+starwars |>
+  select(hair_color, is_bald) |>
+  table(useNA = "always")
+
+#Yes some marked as none are droids!
+```
+
+:::
+
+## `for` loops
+
+As noted in the book, there are many reasons to avoid writing loops in R. Preferably, you should be using the `apply()` functions or the `map` function to perform iteration. 
+
+### Vectorized operations
+
+Many operations in R are vectorized already, so you often don’t need a loop at all.
+
+Consider generating the first 10 number in some integer sequences. For the perfect squares, you don’t need a loop at all, because the square operator is vectorized. Recall that vectors are built into the fundamental design of R, so things are supposed to work this way!
+
+```{r}
+x <- 1:10
+
+x^2
+```
+
+However, consider generating the Fibonacci sequence. This can’t be vectorized, because each entry depends on the previous two entries. You could write a for loop.
+
+```{r}
+fib <- c(1, 1)
+for (i in 3:length(x)) {
+  fib[i] <- fib[i-1] + fib[i-2]
+}
+fib
+```
+
+If we had the Fibonacci sequence already, we could use R’s vector-based operation `lag()` to decompose the sequence.
+
+```{r}
+fib_df <- tibble(
+  fib, 
+  prev_x = lag(fib), 
+  prev_prev_x = lag(fib, 2)
+)
+fib_df
+```
+
+But this won’t help us generate new values in the sequence.
+
+### Using `map()`
+
+Instead, we can write a recursive function to generate the th value in the sequence, and then `map()` over that function.
+
+```{r}
+fibonacci <- function(x) {
+  if (x == 1 | x == 2) {
+    return(1L);
+  } else {
+    return(fibonacci(x - 1) + fibonacci(x - 2));
+  }
+}
+
+map_int(x, fibonacci)
+```
+
+### Choosing a paradigm
+Generally, when you have a vector `x` as input, and you want to produce a vector `y` of the same length as output, you can use one of two paradigms:
+
+- If the operation can be vectorized, write a function that will take the whole input vector `x` and compute the whole `y` vector at once. I suspect that this will be the most efficient method in nearly every case.
+- If the operation can’t be vectorized, write a function that will compute a single value of `y` for a single value of `x`, and then `map()` that function over `x`.
+
+Only if neither of these is possible should you write a for loop!
+
+Recall that we saw `map()` previously in the context of list-columns.
+
+::: {.callout-important}
+
+### Q4
+
+Use the vectorized `nchar()` function to compute the number of characters in each character’s name, without writing any kind of loop.
+
+```{r}
+# PUT SOLUTION HERE
+nchar(starwars$name)
+```
+
+:::
+
+::: {.callout-important}
+
+### Q5
+
+Now compute the same output, but using `map_int()` and `nchar()`. Make sure you understand the difference between these two approaches.
+
+```{r}
+# PUT SOLUTION HERE
+map_int(starwars$name, nchar)
+```
+
+
+:::
+
+
+::: {.callout-important}
+
+### Q6
+
+Now use `map_int()` and `length()` to compute a numeric vector of the number of vehicles associated with each character.
+
+```{r}
+# PUT SOLUTION HERE
+map_int(starwars$vehicles, length)
+```
+
+:::
+
+::: {.callout-important}
+
+### Q7
+
+Use `map()` and `nchar()` to compute the total number of characters in the number of starships associated with each character. For example, Luke Skywalker primarily flew an X-wing fighter, but also briefly piloted an Imperial shuttle in Return of the Jedi. So the number of characters in his starships list is `6 + 16 = 22`.
+
+```{r}
+# PUT SOLUTION HERE
+map(starwars_star$starships, ~sum(nchar(.x)))
+```
+
+:::
+
+::: {.callout-important}
+
+### Q8
+
+Rewrite the following for loop as a call to `map()`. The output should be a list of length 2.
+
+```{r}
+mpg_by_year <- group_split(mpg, year)
+
+mods <- list()
+
+for (i in seq_along(mpg_by_year)) {
+  mods[[i]] <- lm(hwy ~ displ + cyl, data = mpg_by_year[[i]])
+}
+
+# PUT SOLUTION HERE
+map(mpg_by_year, ~lm(hwy ~ displ + cyl, data = .x))
+```
+
+:::
+
+

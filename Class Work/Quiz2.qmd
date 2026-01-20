@@ -1,0 +1,27 @@
+---
+title: "Quiz2"
+format: html
+editor: visual
+---
+
+Using the mtcars dataset, give three ways using R code to output the mpg and qsec of all Toyota cars.
+
+```{r}
+library(tidyverse)
+mtcars <- mtcars
+mtcars2 <- mtcars
+
+#Option one
+mtcars[c("Toyota Corolla", "Toyota Corona"), c("mpg", "qsec")]
+
+#Option two
+mtcars2<- as_data_frame(mtcars2, rownames = "name")
+mtcars2 |>
+  filter(name == "Toyota Corolla" | name == "Toyota Corona") |>
+  select(mpg, qsec)
+
+#Option three
+mtcars3 <- mtcars2 |>
+  select(name, mpg, qsec)
+mtcars3[mtcars3$name == "Toyota Corolla" | mtcars3$name == "Toyota Corona", ]
+```

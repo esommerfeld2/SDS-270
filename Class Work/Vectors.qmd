@@ -1,0 +1,96 @@
+---
+title: "Vectors"
+format: html
+editor: visual
+---
+
+# One: Mess around with vectors (create them, etc?)
+
+```{r}
+#Create
+a_vector <- 1:10
+b_vector <- rep(4,4)
+c_vector <- c(1,2,4,5,7,8)
+c_vector_copy <- c_vector
+
+#Mutate
+a_vector[2] <-5
+a_vector[2:4] <- 5
+a_vector <- a_vector[1:5]
+a_vector[6] <- 10
+```
+
+# Two: Lists and Factors
+
+```{r}
+list_obj <- list(c(1,2), TRUE, "hello")
+factor_obj <- factor(c("low", "med", "high"))
+```
+
+# Three: Functions
+
+```{r}
+a <- c(1,8,4,6)
+sum(a)
+mean(a)
+which(a == 3)
+
+#these return the index from lowest to highest value
+order(a)
+rank(a)
+
+#this sorts the values
+sort(a)
+```
+
+# To print nicely and understanding vectors
+
+```{r}
+paste('I would like to say', a_vector[2])
+typeof(a_vector)
+length(a_vector)
+```
+
+# Adding and subtracting
+
+```{r}
+v1 <- c(2,4,4,3,2)
+v2 <- c(2,3,1,2,1)
+
+#This adds index 0 value with index 0 value and creates a new vector that is all sums, same is true for division
+v1+ v2
+v1/v2
+```
+
+Reading list print out
+[[1]] <- element 1
+[1] 2 and the value is 2
+is 1 long
+
+# Name/Value pair
+
+```{r}
+x <- rep(1,5)
+attr(x, "des") <- "repeats of 1"
+attributes(x)
+names(x) <- rep("name", 5)
+attributes(x)
+```
+
+# S3 atomic vectors
+
+```{r}
+#Should do this code again with date and POSIX.ct (using the textbook)
+groups <- factor(c("w", "t", "w", "l"))
+class(groups)
+attributes(groups)
+```
+
+#Nest and Unnest
+
+```{r}
+library(tidyverse)
+starwars<- starwars
+starwards_person_fil <- starwars |> unnest(films)
+```
+

@@ -1,0 +1,218 @@
+---
+title: "Exercises #2: Vectors"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+
+In this lab, we will learn how to investigate the underlying data structures of R objects.
+
+**Goal:** by the end of this lab, you will be able to determine the base class of any object.
+
+Fill in the code chunks and add written responses for each of the exercises. We will be using the `storms` dataset from `dplyr` for these exercises. Load the libraries below:
+
+```{r, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(purrr)
+```
+
+
+## Exercises
+
+### Attributes
+Objects in R can have attributes. 
+
+::: {.callout-exercise}
+
+##### Ex. 1: Use the `attributes()` function on `head(storms)` to figure out what they are.
+
+:::
+
+```{r}
+# SOLUTION HERE
+attributes(head(storms))
+```
+
+
+Unlike in many other programming languages, attributes in R – including the class of an object – are changeable!
+
+::: {.callout-exercise}
+
+##### Ex. 2: Use the assignment operator (`<-`) and the `attr()` function to change the class of `storms` to a `list` type. 
+
+:::
+
+```{r}
+# SOLUTION HERE
+attr(storms, "class") <- "list"
+```
+
+::: {.callout-exercise}
+
+##### Ex. 3: Is `storms` a data.frame still? Attempt an operation commonly used on tibbles to verify.
+
+:::
+
+```{r, eval=FALSE}
+# SOLUTION HERE
+storms |>
+  group_by(name)
+```
+
+No it is no longer a data frame it is a list. The code above results in an error.
+
+::: {.callout-exercise}
+
+##### Ex. 4: Use `rm(storms)` to delete the bad copy. Now repeat exercise \#3. Why does this work?
+
+:::
+
+```{r}
+# SOLUTION HERE
+rm(storms)
+storms |>
+  group_by(name)
+```
+
+We are removing storms from our environment so we are removing the fact that we changed it to a list. When we call it next it is a data frame because that's its default in tidyverse.
+
+### S3 classes
+S3 is the name of the simplest and most common object-oriented paradigm in R. We’ll learn more about S3 later. For now, we’ll explore common vector classes that are not atomic.
+
+Note first that `storms` has multiple classes, and these classes are ordered.
+
+```{r}
+class(storms)
+```
+
+
+The basic data type of `storms` is a list, because all `tbl_df`s and `data.frame`s are lists.
+
+```{r}
+typeof(storms)
+```
+
+
+When you type `storms` at the console, what actually gets called is `print(storms)`. That is, the default action when you type the name of an object is to run the `print()` command on that object.
+
+Thus, when you type `storms`, R runs `print(storms)`, and since it knows that `print()` is a generic function, and `storms` is a `tbl_df`, it looks for a method called `print.tbl_df()`. If it can’t find one, it will look for a method called `print.tbl()`. If it can’t find one, it will look for `print.data.frame()`. If it can’t find that it will look for `print.default()`.
+
+::: {.callout-exercise}
+
+##### Ex. 5: Examine the differences in the output of `head(storms)` using the following ways:
+- Typing the object only
+- Using `print()`
+- Using `print.data.frame()`
+
+:::
+
+```{r}
+# SOLUTION HERE
+head(storms)
+print(head(storms))
+print.data.frame(head(storms))
+```
+
+Print.data.frame does not highlight certain columns red.
+
+::: {.callout-exercise}
+
+##### Ex. 6: Examine the output of `as.numeric(head(storms$name))` and `as.numeric(factor(head(storms$name)))`. What is going on?
+:::
+
+```{r}
+# SOLUTION HERE
+as.numeric(head(storms$name))
+as.numeric(factor(head(storms$name)))
+```
+
+In the first line of code we are attempting to turn character names into numbers so all values of Amy get turned into NA. In the second line of code we factor or rank the names in storm. Amy is assigned a one. When the one is turned into a numeric type it stays a one.
+
+### List-columns
+Since `data.frame`s are lists, their columns can be objects of arbitrary type. In particular, they can be lists.
+
+We will create a list-column first using `nest()` and define a new tibble called `stormsNamed`.
+
+```{r}
+stormsNamed <- storms %>% 
+  nest(.by = name)
+stormsNamed
+```
+
+
+The `data` column in `stormsNamed` is a list-column. Each entry contains a list of occurrences that the name has been used for tropical storms.
+
+```{r}
+stormData <- stormsNamed |> 
+  pull(data)
+```
+
+Note that the `length()` of `stormData` is 260, but that each entry in `stormData` contains a list of arbitrary length. To see these lengths, we have to `map()` over the entries in `stormData`.
+
+```{r}
+length(stormData)
+map_int(stormData, length)
+```
+
+### nest() and unnest()
+List-columns can be expanded by `unnest()`. This has the effect of lengthening the data frame (sort of like an accordion). Each row is duplicated for each unique value of each entry in the list-column.
+
+Note that each row in storms corresponds to one character, while `stormsNamed` stores the list of tibbles that storm name has been used for. If we `unnest()` the data frame by expanding out the storm names, we get a data frame that is much longer, because each row now represents one storm using that name in a certain instance.
+
+```{r}
+stormsNamed |>
+  unnest(data)
+```
+
+The `nest()` function performs the opposite operation of "rolling up" the data frame to create a new list-column. We did this in the intro of list-columns.
+
+::: {.callout-exercise}
+
+##### Ex. 7: Now using the `starwars` tibble, experiment with list-columns by expanding and contracting the other list-columns in the storms data frame.
+:::
+
+```{r}
+# SOLUTION HERE
+starwars_name <- starwars %>% 
+  nest(.by = name)
+
+starwars_film <- starwars %>% 
+  unnest(.by = films)
+
+starwars_film2 <- starwars_film %>% 
+  nest(.by = films)
+```
+
+
+### Mapping over list columns
+Suppose now we want to add the numbers of films for each character to the `starwars` data set. A simple `mutate()` like this will not throw an error, but also won’t do what we want.
+
+```{r}
+oops <- starwars |>
+  mutate(num_films = length(films)) |>
+  arrange(desc(num_films)) |>
+  select(name, num_films)
+oops
+```
+
+This just made all of the entries equal to `length(films)`.
+
+```{r}
+all(oops$num_films == length(starwars$films))
+```
+
+To get this right, we need to `map()` inside our `mutate()`.
+
+```{r}
+starwars |>
+  mutate(num_films_actual = map_int(films, length)) |>
+  arrange(desc(num_films_actual)) |>
+  select(name, num_films_actual, films)
+```
+
+#### Turn in
+
+Save this .qmd file and turn in on Moodle under "Exercises: Vectors".

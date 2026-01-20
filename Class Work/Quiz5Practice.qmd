@@ -1,0 +1,67 @@
+---
+title: "Quiz5practice"
+format: html
+editor: visual
+---
+
+#MAKE SURE TO LIBRARY PURRR AND DO PURRR::MAP #when in doubt add quotes #and put things in the \~ with .x #good luck
+
+```{r}
+library(mlbench)
+library(tidyverse)
+library(purrr)
+data("BostonHousing2")
+```
+
+1.  Create a function named middle20 that takes in a data frame and a variable name, which returns census tracts that fall within the middle 20% based on a given numeric variable. Assume the input will always be a numeric variable.
+
+```{r}
+#R does not do $ in this sense use [[]]
+middle20 <- function(df, variableName){
+  lower <- quantile(df[[variableName]], 0.4)
+  higher <- quantile(df[[variableName]], 0.6)
+  df |>
+    filter(df[[variableName]] >= lower & df[[variableName]] <= higher)
+}
+df2 <- middle20(BostonHousing2, "crim")
+```
+
+Create a subset of the BostonHousing2 dataset named BHshort, which contains the cmedv, cmrim, nox, rm, age, lon, and lat variables.
+
+```{r}
+BHshort <- BostonHousing2 |>
+  select(cmedv, crim, nox, rm, age, lon, lat)
+```
+
+Using the BHshort data frame, write map() and apply() functions that run the middle20() function on each of the columns, returning some object.
+
+```{r}
+cols <- colnames(BHshort)
+purrr::map(cols, ~middle20(BHshort, .x))
+lapply(cols, function(x) middle20(BHshort, x))
+#for everything thin in postion 1, do this function, x defines where you are iteratiding over
+```
+
+Using results from Q3, pick one of the map functions in order to create a scatter plot of the latitude and longitude coordinates for each element of the object.
+
+```{r}
+newData <- purrr::map(cols, ~middle20(BHshort, .x))
+purrr::map(newData, ~ggplot(data= .x, aes(x= lat, y= lon)) + geom_point())
+```
+
+5.  Use one of the apply/map functions to generate 50 samples of size 10 randomly from the BostonHousing2 dataset.
+
+```{r}
+q5Answer <- replicate(50, BostonHousing2[sample(nrow(BostonHousing2), size = 10), ], simplify = FALSE)
+#simplify turns it into a df
+#for sample of row names
+#replicate(100, sample(rownames(mtcars), size = 10))
+```
+
+6.  Find the mean of the ptratio for each of the samples in Q5, using one of the apply/map functions.
+
+```{r}
+purrr::map_dbl(q5Answer, ~mean(.x$ptratio))
+sapply(q5Answer, function(q5Answer) mean(q5Answer$ptratio)) 
+#chat, sapply simplfies into vector or matrix
+```

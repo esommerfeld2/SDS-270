@@ -1,0 +1,80 @@
+---
+title: 'Quiz #5: Functionals (60 pts)'
+author: "Ella Sommerfeld"
+date: "2025-11-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Instructions
+
+- This is an open-note coding quiz. However, you are not allowed to use any generative AI, Google, or any forums. Doing so will result in a zero.
+- Read and follow all directions; points will be deducted if not all work is shown.
+- When finished, submit a knitted .html file and the .Rmd file to Moodle under "Quiz #5".
+- You have 25 minutes to finish the quiz.
+
+### Introduction
+
+We will be using the `diamonds` dataset from the `ggplot2` package for all questions on this quiz. Look through the following help file for more information.
+
+```{r}
+library(tidyverse)
+```
+
+Additionally, feel free to reference the `dplyr` cheatsheet here: [link](https://rstudio.github.io/cheatsheets/data-transformation.pdf)
+
+1. (12 pts) Create a function named `topkdiamonds`, which takes in `x` as a data frame and `k` as a double value and returns the "k" highest prices (assuming there is a `price` variable in the data frame). *Hint: You will just need to arrange the data frame properly and show only the diamonds that are the most expensive. Also, assume the user will have the correct input types.*
+
+```{r}
+# PUT SOLUTION HERE
+topkdiamonds <- function(x, k){
+  df <- sort(x[["price"]], decreasing = FALSE)
+  df[1:k]
+}
+topkdiamonds(diamonds, 10)
+```
+
+2. (12 pts) Run the code below and explain how the function operates on these three arguments.
+
+```{r}
+diamondsCut <- tapply(diamonds, diamonds$cut, data.frame)
+```
+
+This is grouping by the diamonds cut and then turning each group into a data frame from the diamonds data set. 
+
+3. (12 pts) Apply the `topkdiamonds()` function to the array of data frames (i.e. `diamondsCut`) and the following double vector of `k` (i.e. `c(5, 4, 3, 2, 1)`), using one of the `map()` functions.
+
+```{r}
+# PUT SOLUTION HERE
+diamondsCut2 <- purrr::map2(diamondsCut, c(5,4,3,2,1), ~topkdiamonds(.x, .y))
+```
+
+4. (12 pts) Now, use the `paste()` function on the `cut`, `color`, and `clarity` columns to merge the three values into a single character, using one of the `map()` functions and `sep = " "`.
+
+```{r}
+#| eval: false
+# Do not remove code above this line.
+test <- purrr::map(diamondsCut, paste(diamondsCut$cut, diamondsCut$color, diamondsCut$clarity, sep = " "))
+```
+
+5. (12 pts) Suppose I'm trying to find the 10th, 20th, 80th, and 90th percentiles of the `x` variable in `diamonds`. I can use the following code below to do so:
+
+```{r}
+quants <- c(0.1, 0.2, 0.8, 0.9)
+quantile(diamonds$x, probs = quants)
+```
+
+Using the `map_dbl()` function, rewrite the above code to find those same percentiles.
+
+```{r}
+# PUT SOLUTION HERE
+map_dbl(c(0.1, 0.2, 0.8, 0.9), ~quantile(diamonds$x, probs = .x))
+```
+
+
+
+
+

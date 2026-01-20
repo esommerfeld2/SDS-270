@@ -1,0 +1,244 @@
+---
+title: "Exercises from Class #4: Subsetting"
+subtitle: "SDS 270"
+author: "Ella Sommerfeld"
+format: html
+---
+
+## Introduction
+
+In these exercises, we will be working with the `mtcars` data frame and `starwars` tibble to learn how to subset in various manners.
+
+By the end of this lab, you will be able to:
+
+- subset a data frame and tibble based on positive, negative, logical, and character indexing
+- apply the `filter` and `select` functions via `dplyr`
+
+Load in the following libraries below to work on this lab: `tidyverse`
+
+```{r}
+library(tidyverse)
+```
+
+## Exercises: Set I
+
+These exercises will be completed during lecture.
+
+::: {.callout-important}
+
+##### Q1
+
+What happens when the logical vector is not of the same length as the vector we are subsetting from?
+
+```{r}
+v1 <- c(1,2,3,4)
+v1[c(TRUE, FALSE, FALSE)]
+v1[c(TRUE, FALSE, FALSE, TRUE, TRUE)]
+```
+
+If the logical vector is longer it will return NAs. If the logical vector is shorter it will return any values outside of the logical vector. See example above
+
+:::
+
+::: {.callout-important}
+
+##### Q2
+
+Knowing the subsetting rules on vectors, what are other ways we can access the value in the first row and second column in `iris`?
+
+```{r}
+# PUT ANSWER HERE
+iris[1,2] 
+iris$Sepal.Width[1] 
+iris[[2]][1]
+```
+
+:::
+
+## Exercises: Set II
+
+For these exercises, you will be working exclusively with the `mtcars` data frame. Answer the following questions below:
+
+::: {.callout-important}
+
+##### Q3
+
+Write down three ways to access the third column from `mtcars`.
+
+```{r}
+#| output: false
+# Do not alter code right above.
+mtcars[,3] 
+mtcars$disp
+mtcars[[3]]
+```
+
+:::
+
+::: {.callout-important}
+
+##### Q4
+
+Create a subset of `mtcars` and name this `mtcars10`, which is composed of the first 10 rows and contains the `mpg`, `cyl`, and `qsec` columns.
+
+```{r}
+# PUT ANSWER HERE
+mtcars10 <- mtcars[c(1:10), c(1,2,7)]
+```
+
+:::
+
+::: {.callout-important}
+
+##### Q5
+
+Show two ways to return a subset of `mtcars10` that houses cars that get less than 20 mpg, using base R functions and operators.
+
+```{r}
+# PUT ANSWER HERE
+mtcars10[mtcars10$mpg < 20, ]
+mtcars10[c(5,6,7,10), c(1,2,3)]
+```
+
+:::
+
+::: {.callout-important}
+
+##### Q6
+
+Using `dplyr` functions and the piping operator, repeat Q3.
+
+```{r}
+#| output: false
+# Do not alter code right above.
+mtcars10 |>
+  filter(mpg < 20)
+```
+
+:::
+
+::: {.callout-important}
+
+##### Q7
+
+Subset the `mtcars` data frame such that it contains cars with:
+
+- less than 20 mpg
+- 6 cylinders
+- a qsec not equal to 20.22 
+
+```{r}
+# PUT ANSWER HERE
+mtcars |>
+  filter(mpg < 20) |>
+  filter(cyl == 6) |>
+  filter(qsec != 20.22)
+```
+
+:::
+
+## Exercises: Set III
+
+For these exercises, you will be working exclusively with the `starwars` tibble. Answer the following questions below:
+
+::: {.callout-important}
+
+##### Q8
+
+Using a `dplyr` function, construct a tibble from `starwars` that only contains characters with blue eyes.
+
+```{r}
+#| output: false
+# Do not alter code right above.
+starwars |>
+  filter(eye_color == "blue")
+```
+
+:::
+
+::: {.callout-important}
+
+##### Q9
+
+Using a `dplyr` function, construct a tibble from `starwars` that only contains characters with blue eyes and a height below 100 cm. Then, display only the names of these characters.
+
+```{r}
+#| output: false
+# Do not alter code right above.
+starwars |>
+  filter(eye_color == "blue") |>
+  filter(height < 100) |>
+  select(name)
+```
+
+Note: there are no characters with a height below 100 cm and have blue eyes that's why my tibble is empty.
+:::
+
+### Base R Subsetting vs. dplyr() functions
+
+In many applications, you will find R users that subset through the `[]`, `[[]]`, `$` symbols, but unless we know the type and functionality associated with the type, we will run across some errors.
+
+The next few exercises will showcase this. You will use the following objects in the next 3 exercises.
+
+```{r}
+num <- 5
+var <- "skin_color"
+```
+
+
+::: {.callout-important}
+
+##### Q10
+
+Using `starwars`, access the 5th column using the `num` object within the `[[]]`, `[]` and `$` operators. What do you notice?
+
+```{r}
+#| output: false
+#| eval: false
+# Do not alter code right above.
+starwars[[num]]
+starwars[,num]
+starwars$num
+```
+
+The result is just a character list of all the different skin colors for [[]] and for [] the result is a tibble of characters which is all the different skin colors. The $ operator doesn't work because num is a value not a name.
+
+:::
+
+
+::: {.callout-important}
+
+##### Q11
+
+Using `starwars`, access the 5th column using the `var` object within the `[[]]`, `[]` and `$` operators. What do you notice?
+
+```{r}
+#| output: false
+#| eval: false
+# Do not alter code right above.
+starwars[[var]]
+starwars[,var]
+starwars$var
+```
+
+None of the opperations of var work. You would have to use the column name not a stand in variable. and for [] and [[]] you need a number.
+
+:::
+
+::: {.callout-important}
+
+##### Q12
+
+Using `starwars`, access the 5th column by name with one of the `dplyr` functions. What do you notice?
+
+```{r}
+#| output: false
+#| eval: false
+# Do not alter code right above.
+starwars |>
+  select(skin_color)
+```
+
+The result is a tibble of the skin colors. 
+
+:::
